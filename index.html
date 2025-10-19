@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebAuthn — Create / Get & ClientCapabilities</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+      }
+      .row {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        margin-block: 1rem;
+      }
+      section {
+        border: 1px solid #9993;
+        border-radius: 14px;
+        padding: 1rem;
+      }
+      button {
+        padding: 0.6rem 1rem;
+        border-radius: 999px;
+        border: 1px solid #9995;
+        cursor: pointer;
+      }
+      pre,
+      textarea {
+        width: 100%;
+        min-height: 140px;
+        border: 1px solid #9993;
+        border-radius: 10px;
+        padding: 0.75rem;
+        overflow: auto;
+        background: #00000008;
+      }
+      code {
+        user-select: all;
+      }
+      label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .pill {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        border: 1px solid #9994;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        margin-right: 0.4rem;
+      }
+      .ok {
+        background: #16a34a22;
+        border-color: #16a34a66;
+      }
+      .ng {
+        background: #dc262622;
+        border-color: #dc262666;
+      }
+      .muted {
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebAuthn — Create / Get（1ページ完結） & ClientCapabilities</h1>
+    <p class="muted">
+      このページは学習・デモ用です。実運用では
+      <strong>サーバ</strong>
+      側で「オプション生成・検証・保存」が必須です。HTTPS または
+      <code>http://localhost</code> で実行してください。
+    </p>
+
+    <div class="row">
+      <section>
+        <h2>ClientCapabilities を確認</h2>
+        <div
+          style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0"
+        >
+          <span id="cm-pill" class="pill"
+            >conditional mediation: <span id="cm-val">?</span></span
+          >
+          <span id="gcap-pill" class="pill"
+            >getClientCapabilities(): <span id="gcap-val">?</span></span
+          >
+        </div>
+        <button id="checkCaps">Capability を取得</button>
+        <pre id="capsOut" aria-live="polite"></pre>
+      </section>
+
+      <section>
+        <h2>Create（登録）</h2>
+        <div
+          style="
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+          "
+        >
+          <label
+            ><input id="discCred" type="checkbox" checked />
+            discoverable（passkey）</label
+          >
+          <label
+            ><input id="residentKeyReq" type="checkbox" /> residentKey:
+            "required"</label
+          >
+          <label
+            ><input id="userVerify" type="checkbox" checked /> userVerification:
+            "preferred"</label
+          >
+        </div>
+        <button id="doCreate">navigator.credentials.create()</button>
+        <pre id="createOut" aria-live="polite"></pre>
+      </section>
+
+      <section>
+        <h2>Get（認証）</h2>
+        <div
+          style="
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+          "
+        >
+          <label
+            ><input id="useConditional" type="checkbox" /> mediation:
+            "conditional"</label
+          >
+          <label
+            ><input id="uvGet" type="checkbox" checked /> userVerification:
+            "preferred"</label
+          >
+        </div>
+        <button id="doGet">navigator.credentials.get()</button>
+        <pre id="getOut" aria-live="polite"></pre>
+      </section>
+    </div>
+
+    <section>
+      <h2>注意点</h2>
+      <ul>
+        <li>
+          RP ID は
+          <code>location.hostname</code> を使用。実運用ではサーバが生成した
+          <code>challenge</code> を使い、レスポンスを検証してください。
+        </li>
+        <li>
+          <code>getClientCapabilities()</code> と
+          <code>isConditionalMediationAvailable()</code>
+          は対応ブラウザ・バージョンに依存します。
+        </li>
+      </ul>
+    </section>
+
+    <script>
+      // ========= ユーティリティ =========
+      const $ = (s) => document.querySelector(s);
+      function log(el, obj) {
+        const text =
+          typeof obj === "string"
+            ? obj
+            : JSON.stringify(obj, replacerArrayBuffers, 2);
+        el.textContent = text;
+      }
+      function replacerArrayBuffers(key, value) {
+        if (value instanceof ArrayBuffer)
+          return toB64Url(new Uint8Array(value));
+        if (value?.buffer instanceof ArrayBuffer && value.BYTES_PER_ELEMENT)
+          return toB64Url(new Uint8Array(value.buffer));
+        return value;
+      }
+      function toB64Url(u8) {
+        let str = btoa(String.fromCharCode(...u8));
+        return str.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+      function fromB64Url(str) {
+        str = str.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = str.length % 4 ? 4 - (str.length % 4) : 0;
+        const bin = atob(str + "=".repeat(pad));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes.buffer;
+      }
+      function randBytes(len = 32) {
+        const u8 = new Uint8Array(len);
+        crypto.getRandomValues(u8);
+        return u8;
+      }
+
+      // ========= Capability チェック =========
+      async function checkCapabilities() {
+        const cmSpan = $("#cm-val"),
+          cmPill = $("#cm-pill");
+        const gcapSpan = $("#gcap-val"),
+          gcapPill = $("#gcap-pill");
+        const out = $("#capsOut");
+
+        let cm = false,
+          caps = null,
+          capObj = {};
+        try {
+          cm = await (PublicKeyCredential.isConditionalMediationAvailable?.() ??
+            Promise.resolve(false));
+        } catch {
+          cm = false;
+        }
+        cmSpan.textContent = String(cm);
+        cmPill.className = "pill " + (cm ? "ok" : "ng");
+
+        if (typeof PublicKeyCredential.getClientCapabilities === "function") {
+          try {
+            capObj = await PublicKeyCredential.getClientCapabilities();
+            caps = capObj;
+            gcapSpan.textContent = "supported";
+            gcapPill.className = "pill ok";
+          } catch (e) {
+            gcapSpan.textContent = "error";
+            gcapPill.className = "pill ng";
+            caps = { error: String(e) };
+          }
+        } else {
+          gcapSpan.textContent = "unsupported";
+          gcapPill.className = "pill ng";
+          caps = {
+            note: "getClientCapabilities() not supported in this browser",
+          };
+        }
+
+        // ソート表示（見やすく）
+        const sorted = {};
+        Object.keys(capObj || {})
+          .sort()
+          .forEach((k) => (sorted[k] = capObj[k]));
+        log(out, { conditionalMediationAvailable: cm, capabilities: sorted });
+      }
+
+      // ========= Create（登録） =========
+      async function doCreate() {
+        const out = $("#createOut");
+        try {
+          if (!window.PublicKeyCredential) throw new Error("WebAuthn 未対応");
+
+          const rpId = location.hostname;
+          const userId = randBytes(16);
+
+          const discoverable = $("#discCred").checked;
+          const residentRequired = $("#residentKeyReq").checked;
+          const uv = $("#userVerify").checked ? "preferred" : "discouraged";
+
+          const publicKey = {
+            rp: { id: rpId, name: "Demo RP" },
+            user: {
+              id: userId,
+              name: "demo-user@example.com",
+              displayName: "Demo User",
+            },
+            challenge: randBytes(32),
+            pubKeyCredParams: [
+              { type: "public-key", alg: -7 }, // ES256
+              { type: "public-key", alg: -257 }, // RS256
+            ],
+            timeout: 60_000,
+            attestation: "none",
+            authenticatorSelection: {
+              residentKey: residentRequired
+                ? "required"
+                : discoverable
+                ? "preferred"
+                : "discouraged",
+              requireResidentKey: residentRequired, // 旧フィールドも入れておくと古い実装に親切
+              userVerification: uv,
+            },
+            extensions: {
+              credProps: true,
+              // 大きなBlob等、対応ブラウザであれば:
+              // largeBlob: { support: 'preferred' }
+            },
+          };
+
+          const cred = await navigator.credentials.create({ publicKey });
+          // ここで本来は cred をサーバに送って登録検証する
+          const json = publicKeyCredentialToJSON(cred);
+          log(out, json);
+        } catch (e) {
+          log(out, { error: String(e) });
+        }
+      }
+
+      // ========= Get（認証） =========
+      async function doGet() {
+        const out = $("#getOut");
+        try {
+          if (!window.PublicKeyCredential) throw new Error("WebAuthn 未対応");
+
+          const useConditional = $("#useConditional").checked;
+          const uv = $("#uvGet").checked ? "preferred" : "discouraged";
+
+          // 実運用ではサーバから requestOptions を取得する
+          const publicKey = {
+            challenge: randBytes(32),
+            timeout: 60_000,
+            userVerification: uv,
+            // allowCredentials を空にすると discoverable credential（パスキー）探索
+            allowCredentials: [],
+          };
+
+          const opts = { publicKey };
+          // 条件付きUI（対応ブラウザのみ）
+          if (
+            useConditional &&
+            (await (PublicKeyCredential.isConditionalMediationAvailable?.() ??
+              false))
+          ) {
+            opts.mediation = "conditional";
+          }
+
+          const assertion = await navigator.credentials.get(opts);
+          // 本来は assertion をサーバに送り、署名検証・カウンタ確認を行う
+          const json = publicKeyCredentialToJSON(assertion);
+          log(out, json);
+        } catch (e) {
+          log(out, { error: String(e) });
+        }
+      }
+
+      // ========= JSON 化（ArrayBuffer を base64url に） =========
+      function publicKeyCredentialToJSON(obj) {
+        if (obj instanceof ArrayBuffer) return toB64Url(new Uint8Array(obj));
+        if (obj && typeof obj === "object") {
+          const out = {};
+          for (const k of Object.keys(obj)) {
+            const v = obj[k];
+            out[k] = publicKeyCredentialToJSON(v);
+          }
+          return out;
+        }
+        if (Array.isArray(obj))
+          return obj.map((x) => publicKeyCredentialToJSON(x));
+        return obj;
+      }
+
+      // ========= イベント =========
+      $("#checkCaps").addEventListener("click", checkCapabilities);
+      $("#doCreate").addEventListener("click", doCreate);
+      $("#doGet").addEventListener("click", doGet);
+
+      // 初回起動時、軽く能力チェックだけ走らせる
+      checkCapabilities().catch(() => {});
+    </script>
+  </body>
+</html>

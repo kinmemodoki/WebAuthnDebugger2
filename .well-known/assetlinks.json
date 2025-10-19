@@ -1,0 +1,20 @@
+[
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.webviewtest",
+      "sha256_cert_fingerprints": [
+        "17:65:98:F6:19:E6:8D:6D:79:86:79:19:8D:C4:84:F6:F3:BC:75:8A:18:D9:94:BB:E7:1F:7E:A2:4E:63:46:AF",
+        "69:BB:0F:8A:7C:55:EB:35:FF:AA:33:8F:75:2F:80:6F:4D:ED:97:F8:18:DF:ED:23:3E:FB:CB:F3:85:02:87:DD"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "web",
+      "site": "https://l9kmd2.csb.app"
+    }
+  }
+]
