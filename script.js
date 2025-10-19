@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const credentialsListDiv = document.getElementById('credentials-list');
     const clearStorageBtn = document.getElementById('clear-storage-btn');
     const relatedOriginsCheckbox = document.getElementById('related-origins-checkbox');
+    const nonDiscoverableCheckbox = document.getElementById('non-discoverable-checkbox');
 
     // --- Utility Functions ---
 
@@ -293,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pubKeyCredParams: [ { type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 } ],
                 authenticatorSelection: {
                     userVerification: 'required',
-                    residentKey: 'required' // 'residentKey' is now an alias for 'discoverableCredential'
+                    residentKey: nonDiscoverableCheckbox.checked ? 'discouraged' : 'required' // 'residentKey' is now an alias for 'discoverableCredential'
                 },
                 timeout: 60000,
                 attestation: 'none'
