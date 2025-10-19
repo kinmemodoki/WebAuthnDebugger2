@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(cb => ({ type: 'public-key', id: base64urlToBuffer(cb.value) }));
             
             const challenge = crypto.getRandomValues(new Uint8Array(32));
-            const rpId = relatedOriginsCheckbox.checked ? RELATED_ORIGIN : 'https://' + window.location.hostname;
+            const rpId = relatedOriginsCheckbox.checked ? RELATED_ORIGIN : window.location.hostname;
             log(`Using RP ID: ${rpId}`);
 
             const getOptions = {
