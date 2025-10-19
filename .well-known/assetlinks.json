@@ -28,7 +28,7 @@
     ],
     "target": {
       "namespace": "web",
-      "site": "https://webauthn.kinmemodoki.net"
+      "site": "https://webview.kinmemodoki.net"
     }
   }
 ]
