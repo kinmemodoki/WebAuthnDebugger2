@@ -36,5 +36,15 @@
       "namespace": "web",
       "site": "https://webview.kinmemodoki.net"
     }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "web",
+      "site": "https://web-authn-debugger2.vercel.app/"
+    }
   }
 ]
