@@ -412,6 +412,39 @@ export default function Home() {
         log('Error clearing credentials', error, 'error');
       }
 
+      try {
+        // Signal API を使用してクライアント側のパスキーもすべて削除
+        if (window.PublicKeyCredential && 'signalAllAcceptedCredentials' in PublicKeyCredential) {
+          try {
+            const rpId = window.location.hostname;
+
+            // ユーザーごとにグループ化して削除
+            const userCredMap = new Map<string, string[]>();
+            credentials.forEach(cred => {
+              if (!userCredMap.has(cred.username)) {
+                userCredMap.set(cred.username, []);
+              }
+            });
+
+            // 各ユーザーに対してSignal APIを呼び出し
+            for (const [username] of userCredMap) {
+              await (PublicKeyCredential as any).signalAllAcceptedCredentials({
+                rpId: rpId,
+                userId: bufferToBase64url(new TextEncoder().encode(username)),
+                allAcceptedCredentialIds: []
+              });
+              log(`Signaled deletion for user: ${username}`, { rpId }, 'success');
+            }
+          } catch (signalError: any) {
+            log('Error signaling credential deletion', { name: signalError.name, message: signalError.message }, 'error');
+          }
+        } else {
+          log('PublicKeyCredential.signalAllAcceptedCredentials() is not available in this browser.', '', 'info');
+        }
+      } catch (e) {
+        log('Error clearing by Signal API', e, 'error');
+      }
+
       setIsConfirmingClear(false);
     }
   };
