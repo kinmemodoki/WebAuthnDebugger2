@@ -517,7 +517,7 @@ export default function Home() {
                   onChange={(e) => setUseRelatedOrigin(e.target.checked)}
                   className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <span className="text-gray-700 font-medium">Use <code>deephand-related-origin.netlify.app</code> as RP ID</span>
+                <span className="text-gray-700 font-medium">Use <code>{RELATED_ORIGIN}</code> as RP ID</span>
               </label>
             </div>
             <div className="pt-6">
