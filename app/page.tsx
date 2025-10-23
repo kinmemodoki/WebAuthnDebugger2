@@ -241,6 +241,7 @@ export default function Home() {
           user: { id: userId, name: username, displayName: username },
           pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
           authenticatorSelection: {
+            authenticatorAttachment: 'platform',
             userVerification: 'required',
             residentKey: useNonDiscoverable ? 'discouraged' : 'required'
           },
