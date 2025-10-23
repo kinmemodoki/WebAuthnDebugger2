@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 // Configuration
 const ALLOWED_ANDROID_HASHES = [
+  "17:65:98:F6:19:E6:8D:6D:79:86:79:19:8D:C4:84:F6:F3:BC:75:8A:18:D9:94:BB:E7:1F:7E:A2:4E:63:46:AF",
   "69:BB:0F:8A:7C:55:EB:35:FF:AA:33:8F:75:2F:80:6F:4D:ED:97:F8:18:DF:ED:23:3E:FB:CB:F3:85:02:87:DD"
 ];
 const RELATED_ORIGIN = 'kinmemodoki.net';
@@ -230,11 +231,14 @@ export default function Home() {
       const rpId = useRelatedOrigin ? RELATED_ORIGIN : window.location.hostname;
       log(`Using RP ID: ${rpId}`);
 
+      // user.idをusernameから生成
+      const userId = new TextEncoder().encode(username);
+
       const createOptions: CredentialCreationOptions = {
         publicKey: {
           challenge,
           rp: { name: 'WebAuthn WebView Demo', id: rpId },
-          user: { id: crypto.getRandomValues(new Uint8Array(16)), name: username, displayName: username },
+          user: { id: userId, name: username, displayName: username },
           pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
           authenticatorSelection: {
             userVerification: 'required',
