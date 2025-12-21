@@ -1,0 +1,7 @@
+{
+  "origins": [
+    "https://ror.kinmemodoki.net",
+    "https://web-authn-debugger2.vercel.app",
+    "http://localhost:3000"
+  ]
+}
