@@ -7,7 +7,10 @@ const ALLOWED_ANDROID_HASHES = [
   "17:65:98:F6:19:E6:8D:6D:79:86:79:19:8D:C4:84:F6:F3:BC:75:8A:18:D9:94:BB:E7:1F:7E:A2:4E:63:46:AF",
   "69:BB:0F:8A:7C:55:EB:35:FF:AA:33:8F:75:2F:80:6F:4D:ED:97:F8:18:DF:ED:23:3E:FB:CB:F3:85:02:87:DD"
 ];
-const RELATED_ORIGIN = 'kinmemodoki.net';
+const RELATED_ORIGINS = [
+  'ror.kinmemodoki.net',
+  'web-authn-debugger2.vercel.app'
+];
 
 interface StoredCredential {
   username: string;
@@ -22,7 +25,7 @@ type LogType = 'success' | 'error' | 'info';
 export default function Home() {
   const [credentials, setCredentials] = useState<StoredCredential[]>([]);
   const [username, setUsername] = useState('');
-  const [useRelatedOrigin, setUseRelatedOrigin] = useState(false);
+  const [selectedRpId, setSelectedRpId] = useState('');
   const [useNonDiscoverable, setUseNonDiscoverable] = useState(false);
   const [selectedCredIds, setSelectedCredIds] = useState<Set<string>>(new Set());
   const [logContent, setLogContent] = useState('');
@@ -228,7 +231,7 @@ export default function Home() {
 
     try {
       const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const rpId = useRelatedOrigin ? RELATED_ORIGIN : window.location.hostname;
+      const rpId = selectedRpId || window.location.hostname;
       log(`Using RP ID: ${rpId}`);
 
       // user.idをusernameから生成
@@ -304,7 +307,7 @@ export default function Home() {
       }));
 
       const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const rpId = useRelatedOrigin ? RELATED_ORIGIN : window.location.hostname;
+      const rpId = selectedRpId || window.location.hostname;
       log(`Using RP ID: ${rpId}`);
 
       const getOptions: CredentialRequestOptions = {
@@ -509,17 +512,18 @@ export default function Home() {
           </summary>
           <div id="get-options-section" className="p-6 border-t border-gray-200 divide-y divide-gray-200">
             <div>
-              <h3 className="font-medium text-gray-700 mb-3">Related Origins</h3>
-              <p className="text-sm text-gray-500 mb-4">Use a different RP ID to test related origins support. This must be associated on the server via an <code>.well-known/webauthn</code> file.</p>
-              <label className="flex items-center space-x-3 cursor-pointer p-3 bg-gray-50 rounded-md border hover:bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={useRelatedOrigin}
-                  onChange={(e) => setUseRelatedOrigin(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="text-gray-700 font-medium">Use <code>{RELATED_ORIGIN}</code> as RP ID</span>
-              </label>
+              <h3 className="font-medium text-gray-700 mb-3">RP ID Selection</h3>
+              <p className="text-sm text-gray-500 mb-4">Select an RP ID to use for WebAuthn operations. Related origins must be associated on the server via an <code>.well-known/webauthn</code> file.</p>
+              <select
+                value={selectedRpId}
+                onChange={(e) => setSelectedRpId(e.target.value)}
+                className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">Default (Current Domain)</option>
+                {RELATED_ORIGINS.map(origin => (
+                  <option key={origin} value={origin}>{origin}</option>
+                ))}
+              </select>
             </div>
             <div className="pt-6">
               <h3 className="font-medium text-gray-700 mb-3">Allow specific credentials:</h3>
